@@ -6,37 +6,18 @@ query = (graph) ->
 
 	nodes = {}
 
+	currentType = undefined
+
 	return {
 		node: (id) ->
 			list.push (cb) ->
 				nodes = {id: graph.getNode(id)}
 				cb()
 			return this
-		getChildren: (type) ->
+		
+		traverse: (type) ->
 			list.push (cb) ->
-				type = graph.getType(type)
-				allChildren = []
-				for key, node of nodes
-					allChildren = allChildren.concat graph.getChildren(node)
-				filteredChildren = {}
-				for node in allChildren
-					if node.type == type
-						filteredChildren[node.id] = node
-				nodes = filteredChildren
-				cb()
-			return this
-
-		getParents: (type) ->
-			list.push (cb) ->
-				type = graph.getType(type)
-				allParents = []
-				for key, node of nodes
-					allParents = allParents.concat graph.getParents(node)
-				filteredParents = {}
-				for node in allParents
-					if node.type == type
-						filteredParents[node.id] = node
-				nodes = filteredParents
+				nodes = graph.traverse(nodes, type)
 				cb()
 			return this
 
@@ -45,9 +26,7 @@ query = (graph) ->
 				newNodes = {}
 				arr = (key for key, val of nodes)
 				async.each(arr, (nodeID, asyncCB) ->
-					q = new query(graph)
-					q.node(nodeID)
-					fun(q, (success) ->
+					fun(nodes[nodeID], (success) ->
 						if !success
 							delete nodes[nodeID]
 						asyncCB()
@@ -55,23 +34,36 @@ query = (graph) ->
 				, cb)
 			return this
 
-		evaluate: (cb) ->
+		perform: (cb) ->
 			async.series(list, () ->
-
-				cb(nodes)
+				cb()
 			)
 
-		getValues: (cb) ->
-			async.series(list, () ->
-
-				cb((val.value for key, val of nodes))
-			)
-
-		getValue: (cb) ->
-			this.getValues (values) ->
-				cb(values[0])
-
-	}
+		first: (fun) ->
+			list.push (cb) ->
+				node = (val for key, val of nodes)[0]
+				q = new query(graph)
+				q.node(node.id)
+				q = fun(node, q)
+				if typeof q.perform is 'function'
+					q.perform cb
+				else
+					cb()
+			return this
+		
+		each: (fun) ->
+			list.push (cb) ->
+				async.each (val for key, val of nodes) , (node, asyncCB) ->
+					q = new query(graph)
+					q.node(node.id)
+					q = fun(node, q)
+					if q && typeof q.perform is 'function'
+						q.perform asyncCB
+					else
+						asyncCB()
+				, cb
+			return this
+}
 
 
 module.exports = query

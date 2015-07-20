@@ -20,10 +20,43 @@ Find every comment of user which is equal to "This is comment2"
 
 graph.query()
 	.node(0)
-	.getChildren('CommentList')
-	.getChildren('Comment')
+	.traverse('CommentList')
+	.traverse('Comment')
 	.filter (comment, done) ->
-		comment.getValue (value) ->
-			done(value == "This is comment2")
-	.evaluate (nodes) ->
-		console.log nodes
+		done(comment.value == 'This is comment2')
+	.each (comment) ->
+		console.log comment
+	.perform () ->
+		# done
+###
+Find every friend of user. Populate the name of that user
+###
+
+userA = graph.createNode('User')
+userB = graph.createNode('User')
+userA_name = graph.createNode('Name', 'Bob')
+userB_name = graph.createNode('Name', 'Smith')
+user_friend_list = graph.createNode('FriendsList')
+
+graph.createConnection(user, user_friend_list)
+graph.createConnection(user_friend_list, userA)
+graph.createConnection(user_friend_list, userB)
+graph.createConnection(userA, userA_name)
+graph.createConnection(userB, userB_name)
+
+
+results = {}
+
+graph
+	.query()
+	.node(user.id)
+	.traverse('FriendsList')
+	.traverse('User')
+	.each (user, query) ->
+		query
+			.traverse('Name')
+			.first (name) ->
+				results[user.id] = name.value
+		return query
+	.perform () ->
+		console.log JSON.stringify(results)

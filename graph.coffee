@@ -53,6 +53,24 @@ Graph = ->
 			else
 				return []
 
+		# input: type as String and nodes as object, output: object of nodes
+		traverse: (_nodes, type) ->
+			type = this.getType(type)
+			neighbors = {}
+			for index, node of _nodes
+				children = this.getChildren(node)
+				parents = this.getParents(node)
+				nodeList = children.concat parents
+
+				for item in nodeList
+					if item.type == type
+						neighbors[item.id] = item
+			return neighbors
+
+
+
+		setValue: (id, value) ->
+			nodes[id].value = value
 
 		removeConnection: (parentNode, childNode) ->
 			# todo
