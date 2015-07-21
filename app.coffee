@@ -18,16 +18,16 @@ graph.createConnection(commentList, comment3)
 Find every comment of user which is equal to "This is comment2"
 ###
 
-graph.query()
-	.node(0)
-	.traverse('CommentList')
-	.traverse('Comment')
-	.filter (comment, done) ->
-		done(comment.value == 'This is comment2')
-	.each (comment) ->
-		console.log comment
-	.perform () ->
-		# done
+# graph.query()
+# 	.findNode(0)
+# 	.traverse('CommentList')
+# 	.traverse('Comment')
+# 	.filter (comment, done) ->
+# 		done(comment.value == 'This is comment2')
+# 	.each (comment) ->
+# 		console.log comment
+# 	.perform () ->
+# 		# done
 ###
 Find every friend of user. Populate the name of that user
 ###
@@ -45,18 +45,36 @@ graph.createConnection(userA, userA_name)
 graph.createConnection(userB, userB_name)
 
 
-results = {}
+# results = {}
+
+# graph
+# 	.query()
+# 	.findNode(user.id)
+# 	.traverse('FriendsList')
+# 	.traverse('User')
+# 	.each (user, query) ->
+# 		query
+# 			.traverse('Name')
+# 			.first (name) ->
+# 				results[user.id] = name.value
+# 		return query
+# 	.perform () ->
+# 		console.log JSON.stringify(results)
+
 
 graph
 	.query()
-	.node(user.id)
+	.findNode(user.id)
 	.traverse('FriendsList')
-	.traverse('User')
-	.each (user, query) ->
-		query
-			.traverse('Name')
-			.first (name) ->
-				results[user.id] = name.value
-		return query
-	.perform () ->
-		console.log JSON.stringify(results)
+	.populate 'list', (list) ->
+		list.traverse('User')
+			.populate (user) ->
+				user
+					.populate 'id', (user) ->
+						return user
+					.populate 'name', (user) ->
+						return user.traverse('Name')
+				return user
+		return list
+	.perform (value) ->
+		console.log JSON.stringify(value)

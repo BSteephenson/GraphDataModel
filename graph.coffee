@@ -16,6 +16,7 @@ Graph = ->
 			
 			typeID = types[type]
 			index = nodes.length
+			val = val || index
 			node = {id:index, type: typeID, value: val}
 			nodes.push(node)
 			return node
